@@ -1,10 +1,34 @@
 # Skill Builder Reference
 
-Complete field specifications, hook configurations, and advanced patterns for Claude Code skills.
+Detailed specifications and advanced patterns for Claude Code skills.
 
-## YAML Frontmatter Field Reference
+## YAML Frontmatter Complete Schema
 
-### Core Fields
+```yaml
+---
+# Required Fields
+name: skill-name                          # Required: lowercase, hyphens, max 64 chars
+description: >                            # Required: max 1024 chars, trigger keywords
+  What skill does. When to use it.
+  Specific capabilities: "Extract, merge, analyze"
+
+# Optional Fields
+allowed-tools: [Read, Grep, Glob]         # Tool restrictions
+model: claude-opus-4-5-20251101           # Override model
+context: fork                             # Isolate in sub-agent
+agent: general-purpose                    # Sub-agent type
+user-invocable: true                      # Show in slash menu (default)
+disable-model-invocation: false           # Block Skill tool access
+
+# Hooks - Lifecycle Management
+hooks:                                    # Optional: Pre/Post/Stop hooks
+  PreToolUse: [...]
+  PostToolUse: [...]
+  Stop: [...]
+---
+```
+
+### Field Specifications
 
 #### name
 - **Type**: string

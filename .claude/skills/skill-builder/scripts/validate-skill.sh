@@ -94,10 +94,34 @@ if [ -f "$SKILL_DIR/SKILL.md" ]; then
     line_count=$(wc -l < "$SKILL_DIR/SKILL.md")
     frontmatter_end=$(grep -n "^---$" "$SKILL_DIR/SKILL.md" | sed -n '2p' | cut -d':' -f1)
     if [ -n "$frontmatter_end" ] && [ "$line_count" -le "$frontmatter_end" ]; then
-        echo -e "${YELLOW}⚠ No markdown content after frontmatter${NC}"
-        ((warnings++))
+        echo -e "${RED}✗ No markdown content after frontmatter${NC}"
+        ((errors++))
     else
-        echo -e "${GREEN}✓ Markdown content present${NC}"
+        content_lines=$((line_count - frontmatter_end))
+        echo -e "${GREEN}✓ Markdown content present ($content_lines lines)${NC}"
+        
+        # Check if content exceeds recommended limit
+        if [ "$content_lines" -gt 500 ]; then
+            echo -e "${YELLOW}⚠ Content exceeds 500 lines ($content_lines lines). Consider moving details to reference.md or examples.md${NC}"
+            ((warnings++))
+        fi
+    fi
+    
+    # Validate optional fields
+    if grep -q "^hooks:" "$SKILL_DIR/SKILL.md"; then
+        echo -e "${GREEN}✓ Hooks configured${NC}"
+        
+        # Basic hook syntax validation
+        if grep -A 5 "^hooks:" "$SKILL_DIR/SKILL.md" | grep -q "type: command" && ! grep -q "command:" "$SKILL_DIR/SKILL.md"; then
+            echo -e "${RED}✗ Hook type 'command' specified but no 'command' field found${NC}"
+            ((errors++))
+        fi
+    fi
+    
+    # Check for context: fork in complex skills
+    if [ "$content_lines" -gt 300 ] && ! grep -q "^context:" "$SKILL_DIR/SKILL.md"; then
+        echo -e "${YELLOW}⚠ Complex skill (>300 lines) without context isolation. Consider adding 'context: fork'${NC}"
+        ((warnings++))
     fi
 fi
 
@@ -108,6 +132,33 @@ fi
 
 if [ -f "$SKILL_DIR/examples.md" ]; then
     echo -e "${GREEN}✓ examples.md found (optional)${NC}"
+fi
+
+if [ -f "$SKILL_DIR/EXAMPLES.md" ]; then
+    echo -e "${GREEN}✓ EXAMPLES.md found (optional)${NC}"
+fi
+
+# Check for file reference consistency
+if [ -f "$SKILL_DIR/SKILL.md" ]; then
+    # Check if SKILL.md references examples.md but file is EXAMPLES.md (case mismatch)
+    if grep -q "\[examples.md\]" "$SKILL_DIR/SKILL.md" && [ ! -f "$SKILL_DIR/examples.md" ] && [ -f "$SKILL_DIR/EXAMPLES.md" ]; then
+        echo -e "${RED}✗ SKILL.md references examples.md but file is EXAMPLES.md (case mismatch)${NC}"
+        ((errors++))
+    fi
+    
+    # Check if SKILL.md references EXAMPLES.md but file is examples.md (case mismatch)
+    if grep -q "\[EXAMPLES.md\]" "$SKILL_DIR/SKILL.md" && [ ! -f "$SKILL_DIR/EXAMPLES.md" ] && [ -f "$SKILL_DIR/examples.md" ]; then
+        echo -e "${RED}✗ SKILL.md references EXAMPLES.md but file is examples.md (case mismatch)${NC}"
+        ((errors++))
+    fi
+    
+    # Check for broken references to reference.md or examples.md
+    for ref in reference.md examples.md EXAMPLES.md; do
+        if grep -q "\[$ref\]" "$SKILL_DIR/SKILL.md" && [ ! -f "$SKILL_DIR/$ref" ]; then
+            echo -e "${RED}✗ SKILL.md references $ref but file not found${NC}"
+            ((errors++))
+        fi
+    done
 fi
 
 # Check scripts directory and permissions
@@ -135,8 +186,8 @@ if [ $errors -eq 0 ] && [ $warnings -eq 0 ]; then
     exit 0
 elif [ $errors -eq 0 ]; then
     echo -e "${YELLOW}⚠ Validation passed with $warnings warning(s)${NC}"
-    exit 0
+    exit 1  # Return 1 for warnings (allowed but reported)
 else
     echo -e "${RED}✗ Validation failed with $errors error(s) and $warnings warning(s)${NC}"
-    exit 1
+    exit 2  # Return 2 for errors (blocks edit)
 fi
