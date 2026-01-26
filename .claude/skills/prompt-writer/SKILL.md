@@ -18,7 +18,7 @@ Guide users through structured conversation to build complete, ready-to-use prom
 Use 4-tag system for all prompts:
 
 - **<task>**: What needs to be done (verb + object)
-- **<context>**: Where it will be used and why (environment, background)
+- **<context>**: Technical domain and use case (system context, background)
 - **<specifications>**: Specific requirements and constraints (what to do/not do)
 - **<formatting>**: How output should be structured (format, style)
 
@@ -50,33 +50,35 @@ User: "Fix the authentication error"
 
 ### <context> Validation
 
-**Required information:** Where + why (environment, background, use case)
+**Required information:** Domain + use case (system context, technical background)
 
 **If missing:** Use options-based when domain-known, else open-ended
 
 **Options-based (well-defined domains):**
 ```
-Where will this be used?
-1. Production system
-2. Development/Staging environment
-3. Personal project
-4. Other (please describe)
+What's the system context?
+1. Authentication/Authorization system
+2. API/Backend service
+3. Database layer
+4. Frontend application
+5. Other (please describe)
 ```
 
 **Open-ended (unknown domains):**
 ```
-What's the environment or background for this task?
+What's the technical context or background for this task?
 ```
 
 **Example:**
 ```
 User: "Add user logout"
-Skill: Where will this be used?
-      1. Production system
-      2. Development/Staging
-      3. Personal project
-      4. Other (please describe)
-User: "It's for production API using JWT tokens"
+Skill: What's the system context?
+      1. Authentication/Authorization system
+      2. API/Backend service
+      3. Database layer
+      4. Frontend application
+      5. Other (please describe)
+User: "API using JWT tokens"
 ```
 
 ### <specifications> Validation
@@ -191,7 +193,7 @@ After completing all 4 tags, generate complete prompt in code block:
 ```markdown
 <task>[User's exact task description]</task>
 
-<context>[User's exact context: environment, background, where/why]</context>
+<context>[User's exact context: technical domain, system background, use case]</context>
 
 <specifications>
 - [Specific requirement 1]
